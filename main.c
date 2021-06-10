@@ -156,6 +156,12 @@ int main()
         // Get command
         printf("%s$ ", cwd);
         fgets(s, sizeof(s), stdin);
+        // Check to see if previous process finished executing:
+        if ((lastpid!=0) && waitpid(lastpid, NULL, WNOHANG))
+        {
+            printf("[%d] finished\n", lastpid);
+            lastpid = 0;
+        }
         if (s[0] == '\n')
             continue;
         s[strlen(s) - 1] = '\0';
@@ -163,12 +169,6 @@ int main()
         ReadCommand(s, command);
         // Check exit cond:
         checkexit(command->sub_commands[0].line);
-        // Check to see if previous process finished executing:
-        if (waitpid(lastpid, NULL, WNOHANG) != 0)
-        {
-            printf("[%d] finished\n", lastpid);
-            lastpid = 0;
-        }
         ReadRedirectsAndBackground(command);
         // Check for change directory command:
         if (!strcmp(command->sub_commands[0].argv[0], "cd"))
@@ -196,6 +196,7 @@ int main()
         else // Wait for the final process to finish before accepting the next command. 
         {
             waitpid(lastpid, NULL, 0);
+            lastpid = 0;
         }
         free(command);
     }
